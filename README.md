@@ -1,6 +1,6 @@
 [فارسی](/README_FA.md) 
 
-<p align="center"><a href="#"><img src="images/logo.png" alt="Sinasims" height=300></a></p>
+<p align="center"><a href="#"><img src="" alt="" height=300></a></p>
 
 
 # What is TorSina?
@@ -19,6 +19,6 @@
 
 ## Menu (v1)
 
-<p align="center"><a href="#"><img src="" alt="Sinasims" width=100%></a></p>
+<p align="center"><a href="#"><img src="" alt="" width=100%></a></p>
 
 
