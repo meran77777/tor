@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # دانلود فایل torx.py
-wget https://raw.githubusercontent.com/sinasims/torsina/refs/heads/main/torx.py -O torx.py
+wget https://raw.githubusercontent.com/meran77777/tor/refs/heads/main/torx.py -O torx.py
 
 # تغییر دسترسی به فایل torx.py
 chmod 777 torx.py
