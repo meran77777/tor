@@ -1,26 +1,26 @@
 #!/bin/bash
 
-# دانلود فایل torsina.py
-wget https://raw.githubusercontent.com/sinasims/torsina/refs/heads/main/torsina.py -O torsina.py
+# دانلود فایل torx.py
+wget https://raw.githubusercontent.com/sinasims/torsina/refs/heads/main/torx.py -O torx.py
 
-# تغییر دسترسی به فایل autoTOR.py
-chmod 777 torsina.py
+# تغییر دسترسی به فایل torx.py
+chmod 777 torx.py
 
 # ایجاد دایرکتوری
-mkdir -p /usr/share/torsina
+mkdir -p /usr/share/torx
 
 # کپی کردن فایل به دایرکتوری
-cp torsina.py /usr/share/torsina/torsina.py
+cp torx.py /usr/share/torx/torx.py
 
-# ایجاد اسکریپت برای اجرای torsina.py
-cmnd='#! /bin/sh \n exec python3 /usr/share/torsina/torsina.py "$@"'
-echo -e $cmnd > /usr/bin/torsina
+# ایجاد اسکریپت برای اجرای torx.py
+cmnd='#! /bin/sh \n exec python3 /usr/share/torx/torx.py "$@"'
+echo -e $cmnd > /usr/bin/torx
 
 # تغییر دسترسی به اسکریپت
-chmod +x /usr/bin/torsina
-chmod +x /usr/share/torsina/torsina.py
+chmod +x /usr/bin/torx
+chmod +x /usr/share/torx/torx.py
 
-# اجرای برنامه torsina
-torsina
+# اجرای برنامه torx
+torx
 
 echo "Installation completed successfully."
