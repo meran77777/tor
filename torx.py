@@ -260,7 +260,7 @@ def get_server_location():
 def main():
     while True:
         clear_screen()
-        sinasims()
+        m3hran()
         show_numbers()
         
         # Get Input Number
