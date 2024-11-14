@@ -12,7 +12,25 @@ def clear_screen(): os.system("clear")
 
 
 def m3hran(): print(
-    '''\033[1;36m\n  _________.__                     .__                \n /   _____/|__| ____ _____    _____|__| _____   ______\n _____  \ |  |/    __  \  /  ___/  |/     \ /  ___/\n /        |  |   |  / __ ____ |  |  Y Y  ___ \ \n/_______  /|__|___|  (____  /____  >__|__|_|  /____  >\n        /         /     /     /         /     / \n    \033[0m''')
+    '''\033[1;36m\n  M3hran \n    \033[0m''')
+
+
+def show_numbers():
+    print("Menu Options:")
+    print("1. Install Tor")
+    print("2. Update Tor")
+    print("3. Uninstall Tor")
+    print("4. Get Tor IP")
+    print("5. Create Cron Job")
+    print("6. Reload and Restart Tor")
+    print("7. Change Tor Port")
+    print("8. Update Tor Country")
+    print("9. Start Tor")
+    print("10. Stop Tor")
+    print("11. Restart Tor")
+    print("12. Reload Tor")
+    print("13. Check Tor Status")
+    print("0. Exit")
 
 
 def run_subprocess(commands, input_needed=False):
@@ -131,6 +149,7 @@ def update_tor_country():
         new_exit_nodes = "{" + ",".join(valid_codes) + "}"
         modify_torrc(torrc_path, new_exit_nodes=new_exit_nodes)
         print(f"ExitNodes has been updated successfully with {new_exit_nodes}")
+
 
 def main():
     while True:
