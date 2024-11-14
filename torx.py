@@ -5,33 +5,36 @@ import shutil
 
 torrc_path = '/etc/tor/torrc'
 valid_country_codes = {
-        'tr': 'Turkey', 
-        'de': 'Germany', 
-        'us': 'United States', 
-        'fr': 'France', 
-        'uk': 'United Kingdom',
-        'at': 'Austria', 
-        'be': 'Belgium', 
-        'ro': 'Romania', 
-        'ca': 'Canada', 
-        'sg': 'Singapore',
-        'jp': 'Japan', 
-        'ie': 'Ireland', 
-        'fi': 'Finland', 
-        'es': 'Spain', 
-        'pl': 'Poland'
-    }
+    'tr': 'Turkey',
+    'de': 'Germany',
+    'us': 'United States',
+    'fr': 'France',
+    'uk': 'United Kingdom',
+    'at': 'Austria',
+    'be': 'Belgium',
+    'ro': 'Romania',
+    'ca': 'Canada',
+    'sg': 'Singapore',
+    'jp': 'Japan',
+    'ie': 'Ireland',
+    'fi': 'Finland',
+    'es': 'Spain',
+    'pl': 'Poland'
+}
+
 
 def clear_screen():
     os.system("clear")
 
+
 def m3hran():
     print('''\033[1;36m
-                                                                    
+
 M3hran - Call us > @mizbaneto7777 Telegram
-                                                      
-          
+
+
     \033[0m''')
+
 
 # Update function names and strings to match the requested changes
 def show_numbers():
@@ -63,7 +66,6 @@ def show_numbers():
 
     print("\033[0;33m═════════════════════════════════════════════\033[0m\n")
 
-    
     if tor:
         print(" \033[1;32m1 -\033[0m install tor (" + "\033[1;32minstalled\033[0m)")
     else:
@@ -86,6 +88,7 @@ def show_numbers():
     print("-----------------")
     print(" \033[1;32m0 -\033[0m exit\n\n")
 
+
 def check_tor():
     try:
         # Check if Tor is installed
@@ -97,10 +100,11 @@ def check_tor():
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         return False
-            
+
+
 def modify_torrc(file_path, new_socks_port=None, new_exit_nodes=None):
     try:
-        if(check_tor()):
+        if (check_tor()):
             with open(file_path, 'r') as file:
                 lines = file.readlines()
 
@@ -129,7 +133,7 @@ def modify_torrc(file_path, new_socks_port=None, new_exit_nodes=None):
             # Add new entries if they were not found
             if not socks_port_found and new_socks_port is not None:
                 modified_lines.append(f"SocksPort {new_socks_port}\n")
-            
+
             if not exit_nodes_found and new_exit_nodes is not None:
                 modified_lines.append(f"ExitNodes {new_exit_nodes}\n")
 
@@ -145,16 +149,17 @@ def modify_torrc(file_path, new_socks_port=None, new_exit_nodes=None):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+
 def read_torrc(file_path):
     try:
-        if(check_tor()):
+        if (check_tor()):
             with open(file_path, 'r') as file:
                 lines = file.readlines()
-            
+
             # Extract values for 'SocksPort' and 'ExitNodes'
             socks_port = None
             exit_nodes = None
-            
+
             for line in lines:
                 line = line.strip()
                 if line.startswith('SocksPort'):
@@ -165,7 +170,7 @@ def read_torrc(file_path):
                     parts = line.split(maxsplit=1)
                     if len(parts) > 1:
                         exit_nodes = parts[1]
-            
+
             return socks_port, exit_nodes
         else:
             print("\033[31mTor is not installed.\033[0m\nPlease install it first.")
@@ -175,15 +180,17 @@ def read_torrc(file_path):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+
 def reload_tor():
-    if(check_tor()):
+    if (check_tor()):
         os.system("service tor reload")
     else:
         print("\033[31mTor is not installed.\033[0m\nPlease install it first.")
 
+
 def restart_tor():
     print("\n")
-    if(check_tor()):
+    if (check_tor()):
         try:
             subprocess.run(['sudo', 'systemctl', 'restart', 'tor'], check=True)
         except subprocess.CalledProcessError as e:
@@ -191,9 +198,10 @@ def restart_tor():
     else:
         print("\033[31mTor is not installed.\033[0m\nPlease install it first.")
 
+
 def start_tor():
     print("\n")
-    if(check_tor()):
+    if (check_tor()):
         try:
             subprocess.run(['sudo', 'systemctl', 'start', 'tor'], check=True)
         except subprocess.CalledProcessError as e:
@@ -201,9 +209,10 @@ def start_tor():
     else:
         print("\033[31mTor is not installed.\033[0m\nPlease install it first.")
 
+
 def stop_tor():
     print("\n")
-    if(check_tor()):
+    if (check_tor()):
         try:
             subprocess.run(['sudo', 'systemctl', 'stop', 'tor'], check=True)
         except subprocess.CalledProcessError as e:
@@ -211,11 +220,13 @@ def stop_tor():
     else:
         print("\033[31mTor is not installed.\033[0m\nPlease install it first.")
 
+
 def status_tor():
     print("\n")
-    if(check_tor()):
+    if (check_tor()):
         try:
-            result = subprocess.run(['sudo', 'systemctl', 'status', 'tor'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = subprocess.run(['sudo', 'systemctl', 'status', 'tor'], check=True, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, text=True)
             print("Tor status:")
             print(result.stdout)
         except subprocess.CalledProcessError as e:
@@ -227,7 +238,7 @@ def status_tor():
 def create_cron_job():
     while True:
         clear_screen()
-        sinasims()
+        m3hran()
         print("Select an option for change your IP on tor:\n")
         print("\033[1;32m0\033[0m - Exit\n")
         print("\033[1;32m1\033[0m - 1 minute")
@@ -257,7 +268,7 @@ def create_cron_job():
             delay_minutes = delay_map[option]
             print(f"Cron job set for every {delay_map[option]} minutes.")
             break  # خروج از حلقه while
-        
+
         else:
             print("Invalid option selected.")
             input("Press Enter to continue...")
@@ -267,16 +278,16 @@ def create_cron_job():
         "service tor reload",
         "systemctl restart tor"
     ]
-    
+
     # مسیر جدید: پوشه خانگی کاربر روت
     script_path = "/usr/bin/restart_tor.sh"
-    
+
     # ایجاد فایل شل برای اجرای دستورات
     with open(script_path, 'w') as script_file:
         script_file.write("#!/bin/bash\n")
         for command in commands:
             script_file.write(f"{command}\n")
-    
+
     # قابل اجرا کردن فایل شل
     subprocess.run(["chmod", "+x", script_path])
 
@@ -303,10 +314,10 @@ def create_cron_job():
 
 def get_tor_ip(port=None):
     try:
-        if(check_tor()):
-            if(port == None):
+        if (check_tor()):
+            if (port == None):
                 socks_port, countries = read_torrc(torrc_path)
-                if(socks_port == None):
+                if (socks_port == None):
                     port = 9050
                 else:
                     port = socks_port
@@ -334,6 +345,7 @@ def check_portNumber(port):
         result = s.connect_ex(('127.0.0.1', port))
         return result != 0
 
+
 def update_tor_country():
     input_codes = input("Enter country codes (e.g., tr, de) separated by commas or spaces: ")
     items = input_codes.split(',')
@@ -346,8 +358,8 @@ def update_tor_country():
         print(f"Invalid country codes: \033[0;31m{', '.join(invalid_codes)}\033[0m")
         return False
     else:
-        #return output_string
-        modify_torrc(torrc_path,new_exit_nodes=output_string)
+        # return output_string
+        modify_torrc(torrc_path, new_exit_nodes=output_string)
         print(f"ExitNodes has been updated successfully with {output_string}")
 
 
@@ -360,29 +372,17 @@ def get_server_location():
         country = data.get('country', 'Country not found')
         ip = data.get('ip', 'ip not found')
         return country, ip
-        
+
     except requests.exceptions.RequestException as e:
         return None
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def main():
     while True:
         clear_screen()
-        sinasims()
+        m3hran()
         show_numbers()
-        
+
         # Get Input Number
         choise = input("Enter Your Choice [1-13]:")
         # Check input number
@@ -409,7 +409,7 @@ def main():
                 restart_tor()
                 print("Your Tor ip has been changed.")
                 input("Press Enter to continue...")
-            
+
             case "7":
                 port = input("Enter Your Tor Port: ")
                 check = False
@@ -419,7 +419,7 @@ def main():
                     elif check_portNumber(port) == False:
                         print(f"Port {port} is \033[1;31mBusy033[0m...")
                     else:
-                        break  
+                        break
                     port = input("Enter Your Tor Port: ")
 
                 modify_torrc(torrc_path, new_socks_port=str(port))
@@ -457,7 +457,5 @@ def main():
                 input("Press Enter to continue...")
 
 
-
-    
 if __name__ == "__main__":
     main()
