@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 TORRC_PATH = '/etc/tor/torrc'
 SCRIPT_PATH = '/usr/bin/restart_tor.sh'
-TOR_CHECKSUM = 'tor'
 
 VALID_COUNTRY_CODES = {
     'tr': 'Turkey', 'de': 'Germany', 'us': 'United States', 'fr': 'France',
@@ -74,9 +73,11 @@ class TorManager:
             for line in lines:
                 stripped = line.strip()
                 if stripped.startswith('SocksPort'):
-                    socks_port = stripped.split()[1] if len(stripped.split()) > 1 else None
+                    parts = stripped.split()
+                    socks_port = parts[1] if len(parts) > 1 else None
                 elif stripped.startswith('ExitNodes'):
-                    exit_nodes = stripped.split(maxsplit=1)[1] if len(stripped.split(maxsplit=1)) > 1 else None
+                    parts = stripped.split(maxsplit=1)
+                    exit_nodes = parts[1] if len(parts) > 1 else None
             
             self._torrc_cache = (socks_port, exit_nodes)
             return socks_port, exit_nodes
@@ -232,7 +233,7 @@ class TorManager:
             break
         
         self.modify_torrc(new_socks_port=port)
-        self.restart_tor()
+        self.tor_command('restart')
         print(f"✓ Port changed to {port}\n")
         input("Press Enter to continue")
     
@@ -246,6 +247,10 @@ class TorManager:
             codes_input = input("\nEnter country codes (comma/space separated): ").strip()
             codes = [c.strip().lower() for c in codes_input.replace(',', ' ').split() if c.strip()]
             
+            if not codes:
+                print("Please enter at least one country code.")
+                continue
+            
             invalid = [c for c in codes if c not in VALID_COUNTRY_CODES]
             if invalid:
                 print(f"Invalid codes: {', '.join(invalid)}")
@@ -253,7 +258,7 @@ class TorManager:
             
             exit_nodes = ''.join(f"{{{code}}}" for code in codes)
             self.modify_torrc(new_exit_nodes=exit_nodes)
-            self.restart_tor()
+            self.tor_command('restart')
             print(f"✓ Countries updated to: {exit_nodes}\n")
             break
         
@@ -275,6 +280,7 @@ class TorManager:
         
         if choice not in delays:
             print("Invalid choice.")
+            input("Press Enter to continue")
             return
         
         delay = delays[choice]
@@ -287,6 +293,7 @@ class TorManager:
             self._run_command(['chmod', '+x', SCRIPT_PATH])
         except Exception as e:
             logger.error(f"Error creating script: {e}")
+            input("Press Enter to continue")
             return
         
         # Setup cron
@@ -313,43 +320,32 @@ class TorManager:
             return
         
         actions = {
-            'start': 'Starting', 'stop': 'Stopping', 'restart': 'Restarting', 'reload': 'Reloading'
+            'start': 'Starting', 'stop': 'Stopping', 'restart': 'Restarting', 
+            'reload': 'Reloading', 'status': 'Status'
         }
         
         print(f"\n{actions.get(action, action).capitalize()} Tor...\n")
-        success, stdout, stderr = self._run_command(['sudo', 'systemctl', action, 'tor'])
+        success, stdout, stderr = self._run_command(['sudo', 'systemctl', action, 'tor'], check=False)
         
-        if success:
+        if action == 'status':
+            print("Tor Status:")
+            print(stdout if stdout else stderr)
+        elif success:
             print(f"✓ Tor {action}ed successfully.")
         else:
             print(f"✗ Error: {stderr}")
-        
-        input("Press Enter to continue")
-    
-    def show_status(self):
-        """Show Tor status"""
-        if not self._require_tor():
-            return
-        
-        print("\n")
-        _, stdout, stderr = self._run_command(['sudo', 'systemctl', 'status', 'tor'], check=False)
-        print("Tor Status:")
-        print(stdout if stdout else stderr)
-        input("\nPress Enter to continue")
     
     def show_menu(self):
         """Display main menu"""
         os.system('clear')
         print('''\033[1;36m
- /$$      /$$  /$$$$$$  /$$   /$$ /$$$$$$$   /$$$$$$  /$$   /$$
-| $$$    /$$$ /$$__  $$| $$  | $$| $$__  $$ /$$__  $$| $$$ | $$
-| $$$$  /$$$$|__/  \ $$| $$  | $$| $$  \ $$| $$  \ $$| $$$$| $$
-| $$ $$/$$ $$   /$$$$$/| $$$$$$$$| $$$$$$$/| $$$$$$$$| $$ $$ $$
-| $$  $$$| $$  |___  $$| $$__  $$| $$__  $$| $$__  $$| $$  $$$$
-| $$\  $ | $$ /$$  \ $$| $$  | $$| $$  \ $$| $$  | $$| $$\  $$$
-| $$ \/  | $$|  $$$$$$/| $$  | $$| $$  | $$| $$  | $$| $$ \  $$
-|__/     |__/ \______/ |__/  |__/|__/  |__/|__/  |__/|__/  \__/
-              \033[0m''')
+  _________.__                     .__                
+ /   _____/|__| ____ _____    _____|__| _____   ______
+ \_____  \ |  |/    \\__  \  /  ___/  |/     \ /  ___/
+ /        \|  |   |  \/ __ \_\___ \|  |  Y Y  \\___ \ 
+/_______  /|__|___|  (____  /____  >__|__|_|  /____  >
+        \/         \/     \/     \/         \/     \/ 
+\033[0m''')
         
         tor_status = "✓ Installed" if self.is_tor_installed() else "✗ Not installed"
         socks_port, countries = self.read_torrc()
@@ -375,45 +371,53 @@ def main():
         manager.show_menu()
         choice = input("Enter choice [0-13]: ").strip()
         
-        match choice:
-            case '0':
-                os.system('clear')
-                print("Exiting...")
-                sys.exit(0)
-            case '1':
-                manager.install_tor()
-            case '2':
-                manager.update_tor()
-            case '3':
-                manager.uninstall_tor()
-            case '4':
-                ip = manager.get_tor_ip()
-                print(f"\nTor IP: {ip}\n") if ip else print("\n✗ Could not get IP\n")
-                input("Press Enter to continue")
-            case '5':
-                manager.setup_cron_job()
-            case '6':
-                manager.tor_command('reload')
-                manager.tor_command('restart')
-                print("✓ Tor IP changed.")
-                input("Press Enter to continue")
-            case '7':
-                manager.change_port()
-            case '8':
-                manager.change_countries()
-            case '9':
-                manager.tor_command('start')
-            case '10':
-                manager.tor_command('stop')
-            case '11':
-                manager.tor_command('restart')
-            case '12':
-                manager.tor_command('reload')
-            case '13':
-                manager.show_status()
-            case _:
-                print("Invalid choice.")
-                input("Press Enter to continue")
+        # Use if-elif instead of match for Python 3.9 compatibility
+        if choice == '0':
+            os.system('clear')
+            print("Exiting...")
+            sys.exit(0)
+        elif choice == '1':
+            manager.install_tor()
+        elif choice == '2':
+            manager.update_tor()
+        elif choice == '3':
+            manager.uninstall_tor()
+        elif choice == '4':
+            ip = manager.get_tor_ip()
+            if ip:
+                print(f"\nTor IP: {ip}\n")
+            else:
+                print("\n✗ Could not get IP\n")
+            input("Press Enter to continue")
+        elif choice == '5':
+            manager.setup_cron_job()
+        elif choice == '6':
+            manager.tor_command('reload')
+            manager.tor_command('restart')
+            print("✓ Tor IP changed.")
+            input("Press Enter to continue")
+        elif choice == '7':
+            manager.change_port()
+        elif choice == '8':
+            manager.change_countries()
+        elif choice == '9':
+            manager.tor_command('start')
+            input("Press Enter to continue")
+        elif choice == '10':
+            manager.tor_command('stop')
+            input("Press Enter to continue")
+        elif choice == '11':
+            manager.tor_command('restart')
+            input("Press Enter to continue")
+        elif choice == '12':
+            manager.tor_command('reload')
+            input("Press Enter to continue")
+        elif choice == '13':
+            manager.tor_command('status')
+            input("\nPress Enter to continue")
+        else:
+            print("Invalid choice.")
+            input("Press Enter to continue")
 
 if __name__ == "__main__":
     main()
