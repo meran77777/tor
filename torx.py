@@ -57,15 +57,22 @@ class TorManager:
             return False
         return True
     
-    def read_torrc(self) -> Tuple[Optional[str], Optional[str]]:
+    def read_torrc(self, silent: bool = False) -> Tuple[Optional[str], Optional[str]]:
         """Read SocksPort and ExitNodes from torrc (cached)"""
         if self._torrc_cache is not None:
             return self._torrc_cache
         
-        if not self._require_tor():
+        if not self.is_tor_installed():
+            if not silent:
+                print("\033[31mTor is not installed.\033[0m")
             return None, None
         
         try:
+            if not os.path.exists(TORRC_PATH):
+                if not silent:
+                    print("Torrc file not found.")
+                return None, None
+            
             with open(TORRC_PATH, 'r') as f:
                 lines = f.readlines()
             
@@ -81,16 +88,15 @@ class TorManager:
             
             self._torrc_cache = (socks_port, exit_nodes)
             return socks_port, exit_nodes
-        except FileNotFoundError:
-            print("Torrc file not found.")
-            return None, None
         except Exception as e:
-            logger.error(f"Error reading torrc: {e}")
+            if not silent:
+                logger.error(f"Error reading torrc: {e}")
             return None, None
     
     def modify_torrc(self, new_socks_port: Optional[str] = None, new_exit_nodes: Optional[str] = None):
         """Modify torrc file (only if changes needed)"""
-        if not self._require_tor():
+        if not self.is_tor_installed():
+            print("\033[31mTor is not installed.\033[0m\nPlease install it first.")
             return
         
         try:
@@ -348,7 +354,7 @@ class TorManager:
 \033[0m''')
         
         tor_status = "✓ Installed" if self.is_tor_installed() else "✗ Not installed"
-        socks_port, countries = self.read_torrc()
+        socks_port, countries = self.read_torrc(silent=True)
         socks_port = socks_port or '9050'
         countries = countries or 'Default'
         
