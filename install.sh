@@ -2,10 +2,9 @@
 #
 # Installer for torx, the Tor proxy manager.
 #
-# Usage:
-#   ./install.sh              install or upgrade torx
-#   ./install.sh --uninstall  remove torx and everything it installed
-#   ./install.sh --help       show this text
+# One command installs torx, installs Tor itself and opens the menu:
+#
+#   curl -fsSL https://raw.githubusercontent.com/meran77777/tor/main/install.sh | sudo bash
 #
 # Works on Debian based systems such as Debian, Ubuntu and Kali Linux.
 
@@ -16,6 +15,10 @@ BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 TARGET="${BIN_DIR}/torx"
 RENEW_SCRIPT="/usr/local/sbin/torx-renew"
 CRON_FILE="/etc/cron.d/torx"
+
+# Whether to install the Tor package and open the menu once torx is in place.
+WITH_TOR=1
+START_AFTER_INSTALL=1
 
 # Older copies of this project installed into these paths. They are cleaned up
 # so that a stale executable earlier in PATH cannot shadow the new one.
@@ -47,18 +50,38 @@ usage() {
 Installer for torx, the Tor proxy manager.
 
 Usage:
-  ./install.sh                install or upgrade torx
+  ./install.sh                install torx and Tor, then open the menu
+  ./install.sh --no-start     install everything but do not open the menu
+  ./install.sh --no-tor       install torx only, leave the Tor package alone
   ./install.sh --uninstall    remove torx and everything it installed
   ./install.sh --prefix DIR   install into DIR instead of /usr/local/bin
   ./install.sh --help         show this text
+
+Remote install, all in one command:
+  curl -fsSL https://raw.githubusercontent.com/meran77777/tor/main/install.sh | sudo bash
 
 Works on Debian based systems such as Debian, Ubuntu and Kali Linux.
 EOF
 }
 
+# True when the script was run from a file rather than piped into a shell.
+# When piped, "$0" is the shell itself, so paths relative to it are meaningless.
+running_from_file() {
+    [ -f "$0" ]
+}
+
+# True when a controlling terminal can be reached, even if stdin is a pipe.
+have_terminal() {
+    { : >/dev/tty; } 2>/dev/null
+}
+
 require_root() {
     if [ "$(id -u)" -eq 0 ]; then
         return
+    fi
+    if ! running_from_file; then
+        die "Root privileges are required. Re-run it as:
+  curl -fsSL ${REPO_RAW_URL%/torx.py}/install.sh | sudo bash"
     fi
     if command -v sudo >/dev/null 2>&1; then
         info "Root privileges are required; re-running through sudo."
@@ -101,11 +124,13 @@ fetch_source() {
     # Prefer the copy next to this script so that a git clone installs itself
     # instead of silently pulling a different revision from the network.
     local script_dir
-    script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
-    if [ -f "${script_dir}/torx.py" ]; then
-        info "Using ${script_dir}/torx.py"
-        cp -- "${script_dir}/torx.py" "${WORK_DIR}/torx.py"
-        return
+    if running_from_file; then
+        script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+        if [ -f "${script_dir}/torx.py" ]; then
+            info "Using ${script_dir}/torx.py"
+            cp -- "${script_dir}/torx.py" "${WORK_DIR}/torx.py"
+            return
+        fi
     fi
 
     info "Downloading torx.py"
@@ -152,6 +177,40 @@ remove_legacy() {
     done
 }
 
+install_tor_package() {
+    [ "${WITH_TOR}" -eq 1 ] || return 0
+    printf '\n'
+    info "Installing the Tor package..."
+    # A failure here is not fatal: torx is installed and can retry on its own.
+    if ! "${TARGET}" --install; then
+        warn "Tor could not be installed automatically. Run 'sudo torx --install'"
+        warn "once the problem is fixed."
+        return 0
+    fi
+}
+
+start_torx() {
+    [ "${START_AFTER_INSTALL}" -eq 1 ] || return 0
+    if ! have_terminal; then
+        info "No terminal is attached, so the menu was not opened."
+        info "Run 'torx' from a terminal to use it."
+        return 0
+    fi
+    printf '\n'
+    # stdin is the download when the installer is piped into a shell, so the
+    # controlling terminal is reattached before handing over to the menu.
+    "${TARGET}" </dev/tty || true
+}
+
+print_hints() {
+    printf '\n'
+    printf '%s\n' "  ${C_BOLD}torx${C_RESET}              open the menu"
+    printf '%s\n' "  ${C_BOLD}torx --check${C_RESET}      verify that traffic goes through Tor"
+    printf '%s\n' "  ${C_BOLD}torx --get-ip${C_RESET}     print the current exit IP"
+    printf '%s\n' "  ${C_BOLD}torx --help${C_RESET}       list every option"
+    printf '\n'
+}
+
 do_install() {
     detect_os
     ensure_python
@@ -172,14 +231,12 @@ do_install() {
         warn "  export PATH=\"${BIN_DIR}:\$PATH\""
     fi
 
+    install_tor_package
+
     printf '\n'
     ok "Installation finished."
-    printf '\n'
-    printf '%s\n' "  ${C_BOLD}torx${C_RESET}              open the menu"
-    printf '%s\n' "  ${C_BOLD}torx --install${C_RESET}    install the Tor package itself"
-    printf '%s\n' "  ${C_BOLD}torx --check${C_RESET}      verify that traffic goes through Tor"
-    printf '%s\n' "  ${C_BOLD}torx --help${C_RESET}       list every option"
-    printf '\n'
+    print_hints
+    start_torx
 }
 
 do_uninstall() {
@@ -210,6 +267,8 @@ main() {
         case "$1" in
             -h|--help)      usage; exit 0 ;;
             -u|--uninstall) action="uninstall" ;;
+            --no-tor)       WITH_TOR=0 ;;
+            --no-start)     START_AFTER_INSTALL=0 ;;
             --prefix)
                 [ "$#" -ge 2 ] || die "--prefix needs a directory."
                 BIN_DIR="$2"; TARGET="${BIN_DIR}/torx"; shift ;;
